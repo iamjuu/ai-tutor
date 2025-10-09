@@ -1,6 +1,7 @@
 "use client";
 import { removeBookmark } from "@/lib/actions/companion.actions";
 import { addBookmark } from "@/lib/actions/companion.actions";
+import { BookAIcon, BookAudioIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,14 +38,16 @@ const CompanionCard = ({
       <div className="flex justify-between items-center">
         <div className="subject-badge">{subject}</div>
         <button className="companion-bookmark" onClick={handleBookmark}>
-          <Image
+
+          <BookAudioIcon className="text-white"/>
+          {/* <Image
             src={
               bookmarked ? "/icons/bookmark-filled.svg" : "/icons/bookmark.svg"
             }
             alt="bookmark"
             width={12.5}
             height={15}
-          />
+          /> */}
         </button>
       </div>
 
@@ -61,7 +64,7 @@ const CompanionCard = ({
       </div>
 
       <Link href={`/companions/${id}`} className="w-full">
-        <button className="btn-primary w-full justify-center">
+        <button className="border border-gray-300  rounded-md hover:bg-black hover:text-white w-full justify-center">
           Launch Lesson
         </button>
       </Link>
