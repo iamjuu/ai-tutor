@@ -10,8 +10,16 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: "Converso",
+  title: "Juu AI",
   description: "Real-time AI Teaching Platform",
+  icons: {
+    icon: [
+      { url: "/images/juuailogo.png" },
+      { url: "/images/juuailogo.png", sizes: "32x32", type: "image/png" },
+      { url: "/images/juuailogo.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: "/images/juuailogo.png",
+  },
 };
 
 export default function RootLayout({
