@@ -171,6 +171,7 @@ export const AIChat = ({ companionId, subject, topic, style }: AIChatProps) => {
             className="flex-1"
           />
           <Button
+          className='bg-gray-400'
             onClick={sendMessage}
             disabled={!inputMessage.trim() || isLoading}
             size="sm"

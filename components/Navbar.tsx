@@ -9,8 +9,8 @@ const Navbar = () => {
             <Link className="" href="/">
                 <div className="flex items-center rounded-full gap-2.5 cursor-pointer">
                     <Image
-                        src="/images/juulogo.png"
-                        alt="logo"
+                        src="/images/juuailogo.png"
+                        alt="Juu AI logo"
                         width={46}
                         height={44}
                     />
