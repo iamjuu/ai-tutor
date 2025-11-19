@@ -40,14 +40,7 @@ const CompanionCard = ({
         <button className="companion-bookmark" onClick={handleBookmark}>
 
           <BookAudioIcon className="text-white"/>
-          {/* <Image
-            src={
-              bookmarked ? "/icons/bookmark-filled.svg" : "/icons/bookmark.svg"
-            }
-            alt="bookmark"
-            width={12.5}
-            height={15}
-          /> */}
+     
         </button>
       </div>
 

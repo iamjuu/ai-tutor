@@ -85,7 +85,6 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
             serverMessages: [],
         }
 
-        // @ts-expect-error
         vapi.start(configureAssistant(voice, style), assistantOverrides)
     }
 
@@ -137,7 +136,7 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                         {callStatus === CallStatus.ACTIVE
                         ? "End Session"
                         : callStatus === CallStatus.CONNECTING
-                            ? 'Connecting'
+                          ?'Connecting'
                         : 'Start Session'
                         }
                     </button>

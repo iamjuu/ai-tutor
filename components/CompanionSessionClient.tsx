@@ -51,24 +51,26 @@ export const CompanionSessionClient = ({
 
       {/* Tab Navigation */}
       <div className="flex justify-center mb-6">
-        <div className="flex bg-gray-100 rounded-lg p-1">
-          <Button
-            variant={activeTab === 'voice' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('voice')}
-            className="flex items-center gap-2"
-          >
-            <Mic className="h-4 w-4" />
-            Voice Chat
-          </Button>
-          <Button
-            variant={activeTab === 'chat' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('chat')}
-            className="flex items-center gap-2"
-          >
-            <MessageSquare className="h-4 w-4" />
-            Text Chat
-          </Button>
-        </div>
+      <div className="flex gap-2 bg-gray-100 rounded-lg px-2 py-2">
+  <Button
+    onClick={() => setActiveTab('voice')}
+    className={`flex  hover:bg-gray-400 items-center gap-2 ${
+      activeTab === 'voice' ? 'bg-gray-200 text-black ' :  ' text-black bg-gray-100'
+    }`}
+  >
+    <Mic className="h-4 w-4" />
+  </Button>
+
+  <Button
+    onClick={() => setActiveTab('chat')}
+    className={`flex hover:bg-gray-400  items-center gap-2 ${
+      activeTab === 'chat' ? 'bg-gray-200 text-black' : ' text-black bg-gray-100'
+    }`}
+  >
+    <MessageSquare className="h-4 w-4" />
+  </Button>
+</div>
+
       </div>
 
       {/* Content based on active tab */}
