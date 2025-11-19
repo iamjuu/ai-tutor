@@ -1,12 +1,19 @@
 import {createClient} from "@supabase/supabase-js";
-import {auth} from "@clerk/nextjs/server";
 
 export const createSupabaseClient = () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    }
+
     return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-            async accessToken() {
-                return ((await auth()).getToken());
+        supabaseUrl,
+        supabaseAnonKey,
+        {
+            auth: {
+                persistSession: false,
             }
         }
     )
