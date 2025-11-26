@@ -92,7 +92,7 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
 
             const assistantOverrides = {
                 variableValues: { subject, topic, style },
-                clientMessages: [["transcript"]] as object[][],
+                clientMessages: [["transcript"]] as unknown as object[][],
                 serverMessages: [] as object[][],
             }
 
