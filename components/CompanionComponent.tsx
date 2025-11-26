@@ -51,7 +51,10 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
         const onSpeechStart = () => setIsSpeaking(true);
         const onSpeechEnd = () => setIsSpeaking(false);
 
-        const onError = (error: Error) => console.log('Error', error);
+        const onError = (error: Error) => {
+            console.error('Vapi Error:', error);
+            setCallStatus(CallStatus.INACTIVE);
+        };
 
         vapi.on('call-start', onCallStart);
         vapi.on('call-end', onCallEnd);
@@ -68,7 +71,7 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
             vapi.off('speech-start', onSpeechStart);
             vapi.off('speech-end', onSpeechEnd);
         }
-    }, []);
+    }, [companionId]);
 
     const toggleMicrophone = () => {
         const isMuted = vapi.isMuted();
@@ -77,15 +80,32 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
     }
 
     const handleCall = async () => {
-        setCallStatus(CallStatus.CONNECTING)
+        try {
+            console.log('Starting call with params:', { subject, topic, style, voice });
+            
+            // Check if VAPI token exists
+            if (!process.env.NEXT_PUBLIC_VAPI_WEB_TOKEN) {
+                throw new Error('VAPI token is not configured. Please set NEXT_PUBLIC_VAPI_WEB_TOKEN in your .env.local file');
+            }
 
-        const assistantOverrides = {
-            variableValues: { subject, topic, style },
-            clientMessages: ["transcript"],
-            serverMessages: [],
+            setCallStatus(CallStatus.CONNECTING)
+
+            const assistantOverrides = {
+                variableValues: { subject, topic, style },
+                clientMessages: [["transcript"]] as object[][],
+                serverMessages: [] as object[][],
+            }
+
+            console.log('Calling vapi.start...');
+            await vapi.start(configureAssistant(voice, style), assistantOverrides)
+            console.log('vapi.start completed successfully');
+        } catch (error) {
+            console.error('Failed to start call:', error)
+            setCallStatus(CallStatus.INACTIVE)
+            
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            alert(`Failed to start session: ${errorMessage}\n\nPlease check:\n1. VAPI token is configured\n2. Microphone permissions are granted\n3. Internet connection is stable`)
         }
-
-        vapi.start(configureAssistant(voice, style), assistantOverrides)
     }
 
     const handleDisconnect = () => {
