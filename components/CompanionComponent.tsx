@@ -43,8 +43,19 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
 
         const onMessage = (message: Message) => {
             if(message.type === 'transcript' && message.transcriptType === 'final') {
-                const newMessage= { role: message.role, content: message.transcript}
-                setMessages((prev) => [newMessage, ...prev])
+                const newMessage= { 
+                    role: message.role, 
+                    content: message.transcript,
+                    id: `${Date.now()}-${Math.random()}` // Add unique ID
+                }
+                setMessages((prev) => {
+                    // Prevent duplicate messages with same content
+                    const isDuplicate = prev.some(
+                        msg => msg.content === newMessage.content && msg.role === newMessage.role
+                    )
+                    if (isDuplicate) return prev
+                    return [newMessage, ...prev]
+                })
             }
         }
 
@@ -88,23 +99,38 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                 throw new Error('VAPI token is not configured. Please set NEXT_PUBLIC_VAPI_WEB_TOKEN in your .env.local file');
             }
 
-            setCallStatus(CallStatus.CONNECTING)
-
-            const assistantOverrides = {
-                variableValues: { subject, topic, style },
-                clientMessages: [["transcript"]] as unknown as object[][],
-                serverMessages: [] as object[][],
+            // Request microphone permissions first
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch {
+                throw new Error('Microphone access denied. Please allow microphone permissions in your browser settings.');
             }
 
-            console.log('Calling vapi.start...');
-            await vapi.start(configureAssistant(voice, style), assistantOverrides)
+            setCallStatus(CallStatus.CONNECTING)
+
+            const assistantConfig = configureAssistant(voice, style);
+            const assistantOverrides = {
+                variableValues: { subject, topic, style },
+                clientMessages: ["transcript"],
+                serverMessages: [],
+            }
+            
+          
+            
+            await vapi.start(assistantConfig, assistantOverrides)
             console.log('vapi.start completed successfully');
         } catch (error) {
             console.error('Failed to start call:', error)
             setCallStatus(CallStatus.INACTIVE)
             
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            alert(`Failed to start session: ${errorMessage}\n\nPlease check:\n1. VAPI token is configured\n2. Microphone permissions are granted\n3. Internet connection is stable`)
+            
+            // Check if it's a CORS error
+            if (errorMessage.includes('cors') || errorMessage.includes('CORS')) {
+                alert(`CORS Error: Unable to connect to Vapi API.\n\nPlease check:\n1. Your VAPI token is valid and correctly set in .env.local\n2. Your Vapi account is active\n3. Try refreshing the page\n\nIf the problem persists, contact Vapi support.`)
+            } else {
+                alert(`Failed to start session: ${errorMessage}\n\nPlease check:\n1. VAPI token is configured in .env.local\n2. Microphone permissions are granted\n3. Internet connection is stable\n4. Your Vapi account is active`)
+            }
         }
     }
 
@@ -163,12 +189,12 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                 </div>
             </section>
 
-            <section className="transcript">
+            {/* <section className="transcript">
                 <div className="transcript-message no-scrollbar">
-                    {messages.map((message, index) => {
+                    {messages.map((message) => {
                         if(message.role === 'assistant') {
                             return (
-                                <p key={index} className="max-sm:text-sm">
+                                <p key={message.id || `${message.role}-${message.content}`} className="max-sm:text-sm">
                                     {
                                         name
                                             .split(' ')[0]
@@ -177,7 +203,7 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                                 </p>
                             )
                         } else {
-                           return <p key={index} className="text-primary max-sm:text-sm">
+                           return <p key={message.id || `${message.role}-${message.content}`} className="text-primary max-sm:text-sm">
                                 {userName}: {message.content}
                             </p>
                         }
@@ -185,7 +211,7 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                 </div>
 
                 <div className="transcript-fade" />
-            </section>
+            </section> */}
         </section>
     )
 }
