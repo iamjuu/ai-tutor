@@ -36,47 +36,53 @@ export const createCompanion = async (formData: CreateCompanion) => {
 }
 
 export const getAllCompanions = async ({ limit = 10, page = 1, subject, topic }: GetAllCompanions) => {
-    try {
-        const supabase = createSupabaseClient();
+    const { userId } = await auth();
 
-        let query = supabase.from('companions').select();
+    if(!userId) return [];
 
-        if(subject && topic) {
-            query = query.ilike('subject', `%${subject}%`)
-                .or(`topic.ilike.%${topic}%,name.ilike.%${topic}%`)
-        } else if(subject) {
-            query = query.ilike('subject', `%${subject}%`)
-        } else if(topic) {
-            query = query.or(`topic.ilike.%${topic}%,name.ilike.%${topic}%`)
-        }
+    const token = await getSupabaseToken();
+    const supabase = createSupabaseClient(token);
 
-        query = query.range((page - 1) * limit, page * limit - 1);
+    let query = supabase.from('companions').select().eq('author', userId);
 
-        const { data: companions, error } = await query;
-
-        if(error) {
-            console.error('Supabase query error:', error);
-            throw new Error(`Failed to fetch companions: ${error.message}`);
-        }
-
-        return companions || [];
-    } catch (error) {
-        console.error('getAllCompanions error:', error);
-        throw error;
+    if(subject && topic) {
+        query = query.ilike('subject', `%${subject}%`)
+            .or(`topic.ilike.%${topic}%,name.ilike.%${topic}%`)
+    } else if(subject) {
+        query = query.ilike('subject', `%${subject}%`)
+    } else if(topic) {
+        query = query.or(`topic.ilike.%${topic}%,name.ilike.%${topic}%`)
     }
+
+    query = query.range((page - 1) * limit, page * limit - 1);
+
+    const { data: companions, error } = await query;
+
+    if(error) {
+        console.error('Supabase query error:', error);
+        throw new Error(`Failed to fetch companions: ${error.message}`);
+    }
+
+    return companions || [];
 }
 
 export const getCompanion = async (id: string) => {
-    const supabase = createSupabaseClient();
+    const { userId } = await auth();
+
+    if(!userId) return null;
+
+    const token = await getSupabaseToken();
+    const supabase = createSupabaseClient(token);
 
     const { data, error } = await supabase
         .from('companions')
         .select()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('author', userId);
 
     if(error) return console.log(error);
 
-    return data[0];
+    return data?.[0] ?? null;
 }
 
 export const addToSessionHistory = async (companionId: string) => {
@@ -140,10 +146,16 @@ export const startVoiceSession = async (companionId: string) => {
 }
 
 export const getRecentSessions = async (limit = 10) => {
-    const supabase = createSupabaseClient();
+    const { userId } = await auth();
+
+    if(!userId) return [];
+
+    const token = await getSupabaseToken();
+    const supabase = createSupabaseClient(token);
     const { data, error } = await supabase
         .from('session_history')
         .select(`companions:companion_id (*)`)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(limit)
 
