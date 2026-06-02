@@ -1,6 +1,6 @@
 import {createClient} from "@supabase/supabase-js";
 
-export const createSupabaseClient = () => {
+export const createSupabaseClient = (token?: string | null) => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -12,7 +12,16 @@ export const createSupabaseClient = () => {
         supabaseUrl,
         supabaseAnonKey,
         {
+            global: token
+                ? {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+                : undefined,
             auth: {
+                autoRefreshToken: false,
+                detectSessionInUrl: false,
                 persistSession: false,
             }
         }

@@ -6,7 +6,12 @@ import {vapi} from "@/lib/vapi.sdk";
 import Image from "next/image";
 import Lottie, {LottieRefCurrentProps} from "lottie-react";
 import soundwaves from '@/constants/soundwaves.json'
-import {addToSessionHistory} from "@/lib/actions/companion.actions";
+import {startVoiceSession} from "@/lib/actions/companion.actions";
+import {useRouter} from "next/navigation";
+import type {AssistantOverrides} from "@vapi-ai/web/dist/api";
+
+const transcriptClientMessages = ["transcript"] as unknown as AssistantOverrides["clientMessages"];
+const emptyServerMessages = [] as unknown as AssistantOverrides["serverMessages"];
 
 enum CallStatus {
     INACTIVE = 'INACTIVE',
@@ -16,6 +21,7 @@ enum CallStatus {
 }
 
 const CompanionComponent = ({ companionId, subject, topic, name, userName, userImage, style, voice }: CompanionComponentProps) => {
+    const router = useRouter();
     const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
@@ -38,7 +44,6 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
 
         const onCallEnd = () => {
             setCallStatus(CallStatus.FINISHED);
-            addToSessionHistory(companionId)
         }
 
         const onMessage = (message: Message) => {
@@ -106,13 +111,19 @@ const CompanionComponent = ({ companionId, subject, topic, name, userName, userI
                 throw new Error('Microphone access denied. Please allow microphone permissions in your browser settings.');
             }
 
+            const sessionAccess = await startVoiceSession(companionId);
+            if (!sessionAccess?.allowed) {
+                router.push('/subscription');
+                return;
+            }
+
             setCallStatus(CallStatus.CONNECTING)
 
             const assistantConfig = configureAssistant(voice, style);
             const assistantOverrides = {
                 variableValues: { subject, topic, style },
-                clientMessages: ["transcript"],
-                serverMessages: [],
+                clientMessages: transcriptClientMessages,
+                serverMessages: emptyServerMessages,
             }
             
           

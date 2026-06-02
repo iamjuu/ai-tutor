@@ -3,6 +3,9 @@ import { twMerge } from "tailwind-merge";
 import { subjectsColors, voices } from "@/constants";
 import { CreateAssistantDTO } from "@vapi-ai/web/dist/api";
 
+const transcriptClientMessages = ["transcript"] as unknown as CreateAssistantDTO["clientMessages"];
+const emptyServerMessages = [] as unknown as CreateAssistantDTO["serverMessages"];
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -54,8 +57,8 @@ export const configureAssistant = (voice: string, style: string) => {
         },
       ],
     },
-    clientMessages: ["transcript"],
-    serverMessages: [],
+    clientMessages: transcriptClientMessages,
+    serverMessages: emptyServerMessages,
   };
   return vapiAssistant;
 };

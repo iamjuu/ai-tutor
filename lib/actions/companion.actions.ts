@@ -4,9 +4,26 @@ import {auth} from "@clerk/nextjs/server";
 import {createSupabaseClient} from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
+const FREE_VOICE_SESSION_LIMIT = 3;
+
+const getSupabaseToken = async () => {
+    const { getToken } = await auth();
+    const token = await getToken({ template: 'supabase' });
+
+    if(!token) {
+        throw new Error('Missing Supabase auth token. Configure a Clerk JWT template named "supabase".');
+    }
+
+    return token;
+}
+
 export const createCompanion = async (formData: CreateCompanion) => {
     const { userId: author } = await auth();
-    const supabase = createSupabaseClient();
+
+    if(!author) throw new Error('You must be signed in to create a companion');
+
+    const token = await getSupabaseToken();
+    const supabase = createSupabaseClient(token);
 
     const { data, error } = await supabase
         .from('companions')
@@ -64,7 +81,10 @@ export const getCompanion = async (id: string) => {
 
 export const addToSessionHistory = async (companionId: string) => {
     const { userId } = await auth();
-    const supabase = createSupabaseClient();
+    if(!userId) throw new Error('You must be signed in to start a session');
+
+    const token = await getSupabaseToken();
+    const supabase = createSupabaseClient(token);
     const { data, error } = await supabase.from('session_history')
         .insert({
             companion_id: companionId,
@@ -74,6 +94,49 @@ export const addToSessionHistory = async (companionId: string) => {
     if(error) throw new Error(error.message);
 
     return data;
+}
+
+export const startVoiceSession = async (companionId: string) => {
+    const { userId, has } = await auth();
+    if(!userId) throw new Error('You must be signed in to start a session');
+
+    if(has({ plan: 'pro' })) {
+        await addToSessionHistory(companionId);
+        return {
+            allowed: true,
+            remaining: null,
+        };
+    }
+
+    const token = await getSupabaseToken();
+    const supabase = createSupabaseClient(token);
+
+    const { count, error: countError } = await supabase
+        .from('session_history')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+
+    if(countError) throw new Error(countError.message);
+
+    if((count ?? 0) >= FREE_VOICE_SESSION_LIMIT) {
+        return {
+            allowed: false,
+            remaining: 0,
+        };
+    }
+
+    const { error: insertError } = await supabase.from('session_history')
+        .insert({
+            companion_id: companionId,
+            user_id: userId,
+        })
+
+    if(insertError) throw new Error(insertError.message);
+
+    return {
+        allowed: true,
+        remaining: Math.max(FREE_VOICE_SESSION_LIMIT - ((count ?? 0) + 1), 0),
+    };
 }
 
 export const getRecentSessions = async (limit = 10) => {
@@ -90,7 +153,8 @@ export const getRecentSessions = async (limit = 10) => {
 }
 
 export const getUserSessions = async (userId: string, limit = 10) => {
-    const supabase = createSupabaseClient();
+    const token = await getSupabaseToken();
+    const supabase = createSupabaseClient(token);
     const { data, error } = await supabase
         .from('session_history')
         .select(`companions:companion_id (*)`)
@@ -104,7 +168,8 @@ export const getUserSessions = async (userId: string, limit = 10) => {
 }
 
 export const getUserCompanions = async (userId: string) => {
-    const supabase = createSupabaseClient();
+    const token = await getSupabaseToken();
+    const supabase = createSupabaseClient(token);
     const { data, error } = await supabase
         .from('companions')
         .select()
@@ -117,7 +182,8 @@ export const getUserCompanions = async (userId: string) => {
 
 export const newCompanionPermissions = async () => {
     const { userId, has } = await auth();
-    const supabase = createSupabaseClient();
+
+    if(!userId) return false;
 
     let limit = 0;
 
@@ -128,6 +194,9 @@ export const newCompanionPermissions = async () => {
     } else if(has({ feature: "10_companion_limit" })) {
         limit = 10;
     }
+
+    const token = await getSupabaseToken();
+    const supabase = createSupabaseClient(token);
 
     const { data, error } = await supabase
         .from('companions')
@@ -149,7 +218,8 @@ export const newCompanionPermissions = async () => {
 export const addBookmark = async (companionId: string, path: string) => {
   const { userId } = await auth();
   if (!userId) return;
-  const supabase = createSupabaseClient();
+  const token = await getSupabaseToken();
+  const supabase = createSupabaseClient(token);
   const { data, error } = await supabase.from("bookmarks").insert({
     companion_id: companionId,
     user_id: userId,
@@ -166,7 +236,8 @@ export const addBookmark = async (companionId: string, path: string) => {
 export const removeBookmark = async (companionId: string, path: string) => {
   const { userId } = await auth();
   if (!userId) return;
-  const supabase = createSupabaseClient();
+  const token = await getSupabaseToken();
+  const supabase = createSupabaseClient(token);
   const { data, error } = await supabase
     .from("bookmarks")
     .delete()
@@ -181,7 +252,8 @@ export const removeBookmark = async (companionId: string, path: string) => {
 
 // It's almost the same as getUserCompanions, but it's for the bookmarked companions
 export const getBookmarkedCompanions = async (userId: string) => {
-  const supabase = createSupabaseClient();
+  const token = await getSupabaseToken();
+  const supabase = createSupabaseClient(token);
   const { data, error } = await supabase
     .from("bookmarks")
     .select(`companions:companion_id (*)`) // Notice the (*) to get all the companion data
