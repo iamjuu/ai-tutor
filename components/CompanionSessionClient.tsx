@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getSubjectColor } from "@/lib/utils";
 import Image from "next/image";
 import CompanionComponent from "@/components/CompanionComponent";
@@ -9,7 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Mic, MessageSquare } from "lucide-react";
 
 interface CompanionSessionClientProps {
-  companion: any;
+  companion: {
+    name: string;
+    subject: string;
+    topic: string;
+    duration: number;
+    voice: string;
+    style: string;
+  };
   companionId: string;
   userName: string;
   userImage: string;
@@ -22,7 +29,29 @@ export const CompanionSessionClient = ({
   userImage 
 }: CompanionSessionClientProps) => {
   const [activeTab, setActiveTab] = useState<'voice' | 'chat'>('voice');
-  const { name, subject, title, topic, duration, style, voice } = companion;
+  const [showChatToast, setShowChatToast] = useState(false);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { name, subject, topic, duration, style } = companion;
+
+  const showComingSoonToast = () => {
+    setShowChatToast(true);
+
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+
+    toastTimeoutRef.current = setTimeout(() => {
+      setShowChatToast(false);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <main>
@@ -62,16 +91,26 @@ export const CompanionSessionClient = ({
   </Button>
 
   <Button
-    onClick={() => setActiveTab('chat')}
-    className={`flex hover:bg-gray-400  items-center gap-2 ${
-      activeTab === 'chat' ? 'bg-gray-200 text-black' : ' text-black bg-gray-100'
-    }`}
+    onClick={showComingSoonToast}
+    aria-disabled="true"
+    title="Coming soon"
+    className="flex items-center gap-2 bg-gray-100 text-black opacity-60 cursor-not-allowed hover:bg-gray-100"
   >
     <MessageSquare className="h-4 w-4" />
   </Button>
 </div>
 
       </div>
+
+      {showChatToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-black px-4 py-2 text-sm font-medium text-white shadow-lg"
+        >
+          Coming soon
+        </div>
+      )}
 
       {/* Content based on active tab */}
       {activeTab === 'voice' ? (
